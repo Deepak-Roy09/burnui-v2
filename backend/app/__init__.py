@@ -1,0 +1,1 @@
+"""BurnUI FastAPI application package."""
