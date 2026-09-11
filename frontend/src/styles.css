@@ -72,5 +72,21 @@ dd { margin: 0; color: #fff; font-variant-numeric: tabular-nums; }
 .feature-list strong { color: #e6edf8; font-size: 13px; }
 .feature-list span { color: #aebbd1; font-size: 12px; line-height: 1.4; }
 
-@media (max-width: 900px) { .content { padding: 48px 32px; } .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .screening-grid { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .app-shell { display: block; } .sidebar { width: 100%; padding: 16px; border-right: 0; border-bottom: 1px solid #23304b; } .brand { margin-bottom: 14px; } nav { grid-template-columns: repeat(3, 1fr); } .nav-item { text-align: center; } .content { padding: 34px 20px; } .upload-panel { align-items: stretch; flex-direction: column; } .summary-grid { grid-template-columns: 1fr 1fr; } th, td { padding-right: 12px; padding-left: 12px; } }
+.dashboard-stack { display: grid; gap: 42px; }
+.drift-module { display: grid; gap: 22px; border: 1px solid #283654; padding: 22px; background: #111a2d; }
+.drift-module-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; border-bottom: 1px solid #283654; padding-bottom: 18px; }
+.drift-module-heading h2 { margin-bottom: 8px; font-size: 20px; }
+.drift-module-heading p:not(.eyebrow) { max-width: 720px; margin: 0; color: #aebbd1; line-height: 1.55; }
+.module-badge { flex: 0 0 auto; border: 1px solid #50658c; padding: 6px 9px; color: #bcd0e8; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.drift-state { margin: 0; border-left: 3px solid #7198ad; padding: 12px 14px; background: #16283a; color: #d2e4f4; }
+.drift-error { border-left-color: #ff6b6b; background: #321c2a; color: #ffd5d5; }
+.drift-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border-top: 1px solid #283654; border-left: 1px solid #283654; }
+.drift-metric { display: grid; min-height: 92px; align-content: start; gap: 8px; border-right: 1px solid #283654; border-bottom: 1px solid #283654; padding: 14px; background: #0d1527; }
+.drift-metric dt { color: #8291ad; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.drift-metric dd { color: #e6edf8; font-size: 14px; font-weight: 650; line-height: 1.4; }
+.drift-interpretation { display: grid; gap: 4px; border-left: 3px solid #44d2aa; padding: 12px 14px; background: #173a35; color: #d3f2e7; }
+.drift-interpretation p, .drift-disclaimer { margin: 0; }
+.drift-disclaimer { border-top: 1px solid #283654; padding-top: 16px; color: #aebbd1; font-size: 13px; line-height: 1.55; }
+
+@media (max-width: 900px) { .content { padding: 48px 32px; } .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .screening-grid { grid-template-columns: 1fr; } .drift-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .app-shell { display: block; } .sidebar { width: 100%; padding: 16px; border-right: 0; border-bottom: 1px solid #23304b; } .brand { margin-bottom: 14px; } nav { grid-template-columns: repeat(3, 1fr); } .nav-item { text-align: center; } .content { padding: 34px 20px; } .upload-panel { align-items: stretch; flex-direction: column; } .summary-grid, .drift-metric-grid { grid-template-columns: 1fr 1fr; } .drift-module-heading { display: grid; } th, td { padding-right: 12px; padding-left: 12px; } }

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.routes.datasets import router as datasets_router
+from app.api.routes.drift_evaluation import router as drift_evaluation_router
 from app.api.routes.health import router as health_router
 from app.api.routes.screening import router as screening_router
 
@@ -13,6 +14,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router, prefix="/api")
     app.include_router(datasets_router, prefix="/api")
+    app.include_router(drift_evaluation_router, prefix="/api")
     app.include_router(screening_router, prefix="/api")
     return app
 

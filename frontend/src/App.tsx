@@ -1,5 +1,12 @@
-import { useRef, useState } from "react";
-import { runScreening, type RiskStatus, type ScreenedComponent, type ScreeningResponse } from "./api";
+import { useEffect, useRef, useState } from "react";
+import {
+  runDriftEvaluation,
+  runScreening,
+  type DriftEvaluationResponse,
+  type RiskStatus,
+  type ScreenedComponent,
+  type ScreeningResponse,
+} from "./api";
 
 const navigation = ["Dashboard", "Dataset", "Screening"] as const;
 type View = (typeof navigation)[number];
@@ -17,7 +24,39 @@ export default function App() {
   const [selectedComponent, setSelectedComponent] = useState<ScreenedComponent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [driftEvaluation, setDriftEvaluation] = useState<DriftEvaluationResponse | null>(null);
+  const [driftError, setDriftError] = useState<string | null>(null);
+  const [isDriftLoading, setIsDriftLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDriftEvaluation() {
+      setIsDriftLoading(true);
+      setDriftError(null);
+      try {
+        const response = await runDriftEvaluation();
+        if (!cancelled) setDriftEvaluation(response);
+      } catch (caughtError) {
+        if (!cancelled) {
+          setDriftEvaluation(null);
+          setDriftError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : "The drift prediction evaluation could not be loaded.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsDriftLoading(false);
+      }
+    }
+
+    void loadDriftEvaluation();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleScreening() {
     if (!selectedFile) {
@@ -61,7 +100,15 @@ export default function App() {
         </nav>
       </aside>
       <main className="content">
-        {view === "Dashboard" && <Dashboard results={results} onUpload={() => setView("Dataset")} />}
+        {view === "Dashboard" && (
+          <Dashboard
+            results={results}
+            onUpload={() => setView("Dataset")}
+            driftEvaluation={driftEvaluation}
+            driftError={driftError}
+            isDriftLoading={isDriftLoading}
+          />
+        )}
         {view === "Dataset" && (
           <DatasetUpload
             error={error}
@@ -88,26 +135,105 @@ export default function App() {
   );
 }
 
-function Dashboard({ results, onUpload }: { results: ScreeningResponse | null; onUpload: () => void }) {
-  if (!results) {
-    return (
-      <section className="page-section empty-state">
-        <p className="eyebrow">Screening dashboard</p>
-        <h1>Component screening, ready for data.</h1>
-        <p className="intro">Upload a normalized C-MAPSS CSV to run the existing real-only anomaly screen. Live component results will appear here after processing.</p>
-        <button className="primary-button" type="button" onClick={onUpload}>Upload dataset</button>
-      </section>
-    );
-  }
-
+function Dashboard({
+  results,
+  onUpload,
+  driftEvaluation,
+  driftError,
+  isDriftLoading,
+}: {
+  results: ScreeningResponse | null;
+  onUpload: () => void;
+  driftEvaluation: DriftEvaluationResponse | null;
+  driftError: string | null;
+  isDriftLoading: boolean;
+}) {
   return (
-    <section className="page-section">
-      <p className="eyebrow">Screening dashboard</p>
-      <h1>Latest component risk profile.</h1>
-      <p className="intro">Values below come from the most recent screening API response.</p>
-      <SummaryCards summary={results.summary} />
+    <div className="dashboard-stack">
+      {!results ? (
+        <section className="page-section empty-state">
+          <p className="eyebrow">Production screening</p>
+          <h1>Component screening, ready for data.</h1>
+          <p className="intro">Upload a normalized C-MAPSS CSV to run the existing real-only anomaly screen. Live component results will appear here after processing.</p>
+          <button className="primary-button" type="button" onClick={onUpload}>Upload dataset</button>
+        </section>
+      ) : (
+        <section className="page-section">
+          <p className="eyebrow">Production screening</p>
+          <h1>Latest component risk profile.</h1>
+          <p className="intro">Values below come from the most recent screening API response.</p>
+          <SummaryCards summary={results.summary} />
+        </section>
+      )}
+      <DriftEvaluationPanel evaluation={driftEvaluation} error={driftError} isLoading={isDriftLoading} />
+    </div>
+  );
+}
+
+function DriftEvaluationPanel({
+  evaluation,
+  error,
+  isLoading,
+}: {
+  evaluation: DriftEvaluationResponse | null;
+  error: string | null;
+  isLoading: boolean;
+}) {
+  return (
+    <section className="page-section drift-module" aria-labelledby="drift-evaluation-title">
+      <div className="drift-module-heading">
+        <div>
+          <p className="eyebrow">Drift-prediction evaluation</p>
+          <h2 id="drift-evaluation-title">Drift Prediction Evaluation</h2>
+          <p>
+            A separate MAE and baseline comparison. It does not generate production component risk
+            scores or Normal / Watchlist / High Risk results.
+          </p>
+        </div>
+        <span className="module-badge">Evaluation only</span>
+      </div>
+
+      {isLoading && <p className="drift-state" role="status">Loading drift-prediction evaluation…</p>}
+      {!isLoading && error && (
+        <p className="drift-state drift-error" role="alert">
+          Drift prediction evaluation is unavailable. {error}
+        </p>
+      )}
+
+      {!isLoading && !error && evaluation && (
+        <>
+          <dl className="drift-metric-grid">
+            <DriftMetric label="Dataset" value="NASA C-MAPSS — public degradation/prognostics proxy" />
+            <DriftMetric label="Input" value={`Cycles ${evaluation.input_window.start_cycle}–${evaluation.input_window.end_cycle}`} />
+            <DriftMetric label="Prediction target" value={`${evaluation.target_sensor} at cycle ${evaluation.target_cycle}`} />
+            <DriftMetric label="Model" value={evaluation.model_name} />
+            <DriftMetric label="Validation MAE" value={formatMae(evaluation.validation_mae)} />
+            <DriftMetric label="Test MAE" value={formatMae(evaluation.mae)} />
+            <DriftMetric label="Baseline" value={evaluation.baseline_model_name} />
+            <DriftMetric label="Baseline test MAE" value={formatMae(evaluation.baseline_mae)} />
+            <DriftMetric label="Test engines" value={`${evaluation.test_engine_count} untouched engines`} />
+            <DriftMetric label="Usable engines" value={String(evaluation.usable_engine_count)} />
+          </dl>
+          <div className="drift-interpretation">
+            <p>Lower MAE indicates smaller prediction error.</p>
+            <p>
+              {evaluation.mae < evaluation.baseline_mae
+                ? `On the untouched C-MAPSS test split, the ${evaluation.model_name} achieved lower MAE than the training-target mean baseline.`
+                : `On the untouched C-MAPSS test split, the ${evaluation.model_name} did not achieve lower MAE than the training-target mean baseline.`}
+            </p>
+          </div>
+        </>
+      )}
+
+      <p className="drift-disclaimer">
+        C-MAPSS is used here as a public degradation/prognostics proxy. It is not actual ISRO component burn-in data or Iddq measurement data. Deployment on real screening data would require retraining and validation.
+      </p>
     </section>
   );
+}
+
+function DriftMetric({ label, value }: { label: string; value: string }) {
+  return <div className="drift-metric"><dt>{label}</dt><dd>{value}</dd></div>;
 }
 
 function DatasetUpload({
@@ -250,6 +376,10 @@ function StatusBadge({ status }: { status: RiskStatus }) {
 
 function formatScore(value: number): string {
   return Number.isFinite(value) ? value.toFixed(3) : "—";
+}
+
+function formatMae(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(5) : "—";
 }
 
 function buildStatusExplanation(component: ScreenedComponent): string {
