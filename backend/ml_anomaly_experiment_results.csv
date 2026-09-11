@@ -1,0 +1,5 @@
+model_name,validation_threshold,threshold_quantile,tp,tn,fp,fn,precision,recall,f1,fpr,fnr,pr_auc,roc_auc,notes
+production_baseline_zscore_isolation_forest,0.8071428571428572,0.85,1,10,3,1,0.25,0.5,0.3333333333333333,0.23076923076923078,0.5,0.6111111111111112,0.7307692307692308,Exact production 50/50 Z-score + Isolation Forest configuration.
+isolation_forest_400_estimators_80pct_samples,0.8807142857142858,0.85,1,11,2,1,0.3333333333333333,0.5,0.4,0.15384615384615385,0.5,0.6666666666666666,0.8461538461538461,"Same 50/50 fusion; deterministic 400-tree, 80%-sample IF comparison."
+robust_mad_max_deviation,0.8685714285714285,0.85,0,10,3,2,0.0,0.0,,0.23076923076923078,1.0,0.2361111111111111,0.6153846153846154,Train-fitted median/MAD detector; validation 85th-percentile alert threshold.
+local_outlier_factor_novelty,0.8828571428571428,0.85,1,11,2,1,0.3333333333333333,0.5,0.4,0.15384615384615385,0.5,0.29166666666666663,0.6923076923076923,Single additional novelty detector (20 neighbours); train fit and validation 85th-percentile calibration.

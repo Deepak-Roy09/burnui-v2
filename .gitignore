@@ -16,6 +16,11 @@ dist/
 .env.*
 !.env.example
 
+# BurnUI local identity data
+backend/data/*.sqlite3
+backend/data/*.sqlite3-shm
+backend/data/*.sqlite3-wal
+
 # OS / editor
 .DS_Store
 Thumbs.db
